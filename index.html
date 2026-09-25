@@ -1,1 +1,312 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#b99ce8">
+<title>记账簿</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eeeaf5;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif;color:#292532}
+button,input,select,textarea{font:inherit}
+button{border:0}
+.app{width:min(430px,100vw);min-height:100vh;margin:auto;background:#f8f6fb;padding-bottom:88px}
+.top{padding:24px 20px 12px;background:linear-gradient(135deg,#cdb8ee,#a98bd8);color:#fff;border-radius:0 0 28px 28px}
+.title{font-size:25px;font-weight:800}.sub{opacity:.8;font-size:13px;margin-top:3px}
+.hero{margin-top:18px;background:#ffffff2b;border:1px solid #ffffff45;border-radius:22px;padding:18px}
+.hero .label{font-size:13px;opacity:.85}.amount{font-size:34px;font-weight:800;margin-top:5px}
+.content{padding:16px}.section{font-size:17px;font-weight:800;margin:18px 2px 10px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:#fff;border-radius:18px;padding:14px;box-shadow:0 5px 18px #3b2a5312}
+.card .name{font-size:13px;color:#746b7d}.card .money{font-size:18px;font-weight:750;margin-top:5px}
+.bar{height:5px;background:#eee8f5;border-radius:9px;margin-top:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:#aa8ddd;border-radius:9px}
+.record{background:#fff;border-radius:18px;padding:13px 14px;margin:9px 0;display:flex;justify-content:space-between;box-shadow:0 4px 15px #3b2a5310}
+.merchant{font-weight:750}.meta{font-size:12px;color:#8c8494;margin-top:4px}.price{font-weight:800;white-space:nowrap}
+.search{display:flex;gap:8px;margin-bottom:12px}
+.search input{flex:1;border:1px solid #e1dbe9;border-radius:15px;padding:11px 13px;background:#fff;outline:none}
+.search button,.primary{background:#ad90dc;color:#fff;border-radius:14px;padding:0 15px;font-weight:700}
+.fab{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);width:58px;height:58px;border-radius:50%;background:#a988d8;color:#fff;font-size:30px;box-shadow:0 8px 22px #65468d45;z-index:4}
+.nav{position:fixed;bottom:0;left:0;right:0;height:76px;background:#fff;border-top:1px solid #eee8f2;display:flex;justify-content:center;z-index:3}
+.navin{width:min(430px,100vw);display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center}
+.nav button{background:none;color:#8b8293;font-size:17px;line-height:1.35}
+.nav button.active{color:#805fb1;font-weight:800}.nav .plus{font-size:27px;color:#9a79c9}
+.modal{position:fixed;inset:0;background:#0005;display:none;align-items:flex-end;z-index:10}
+.sheet{width:min(430px,100vw);margin:auto;background:#faf8fc;border-radius:26px 26px 0 0;padding:18px;max-height:90vh;overflow:auto}
+.sheet h2{margin:0 0 14px}
+.receipt-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px}
+.receipt-btn{height:48px;border-radius:14px;background:#eee7f7;color:#624b7a;font-weight:750;border:1px solid #dfd3eb;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.receipt-btn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.field{margin:9px 0}.field label{font-size:12px;color:#766d7c;display:block;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;border:1px solid #e0d8e8;background:#fff;border-radius:13px;padding:11px;outline:none}
+.actions{display:flex;gap:9px;margin-top:14px}.actions button{height:44px;flex:1;border-radius:13px;font-weight:750}
+.cancel{background:#eee8f3;color:#5f5667}.primary{background:#a889d6}
+.toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);background:#332b3b;color:#fff;padding:10px 15px;border-radius:13px;display:none;z-index:20;font-size:13px}
+.donut{width:150px;height:150px;border-radius:50%;margin:8px auto 18px;background:conic-gradient(#a98bd8 0 42%,#d5b7ef 42% 63%,#b7a4dc 63% 76%,#cbbfd9 76% 90%,#e1d9e9 90%);position:relative}
+.donut:after{content:"";position:absolute;inset:35px;background:#faf8fc;border-radius:50%}
+.legend div{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee8f1}
+.empty{text-align:center;color:#918897;padding:35px 10px}
+</style>
+</head>
+<body>
 
+<div class="app" id="app"></div>
+
+<button class="fab" onclick="openAdd()">＋</button>
+
+<div class="nav">
+<div class="navin">
+<button id="n-home" onclick="go('home')">⌂<br>首页</button>
+<button id="n-detail" onclick="go('detail')">☷<br>明细</button>
+<button id="n-stat" onclick="go('stat')">◔<br>统计</button>
+</div>
+</div>
+
+<div class="modal" id="modal">
+<div class="sheet">
+<h2>新增记账</h2>
+
+<div class="receipt-actions">
+
+<label class="receipt-btn">
+📷 拍照识别小票
+<input type="file" accept="image/*" capture="environment" onchange="receiptSelected(this)">
+</label>
+
+<label class="receipt-btn">
+🖼️ 从相册选择
+<input type="file" accept="image/*" onchange="receiptSelected(this)">
+</label>
+
+</div>
+
+<div class="field">
+<label>日期（南非时间）</label>
+<input id="fdate" type="date">
+</div>
+
+<div class="field">
+<label>商家</label>
+<input id="fmerchant" placeholder="例如 Checkers">
+</div>
+
+<div class="field">
+<label>金额 ZAR</label>
+<input id="famount" inputmode="decimal" placeholder="0.00">
+</div>
+
+<div class="field">
+<label>一级分类</label>
+<select id="fcat">
+<option>超市采购</option>
+<option>外出餐饮饭馆</option>
+<option>出行交通</option>
+<option>医药健康</option>
+<option>其他</option>
+</select>
+</div>
+
+<div class="field">
+<label>二级分类</label>
+<select id="fsub">
+<option>食材食品</option>
+<option>家居日用</option>
+<option>采购杂物</option>
+</select>
+</div>
+
+<div class="field">
+<label>明细</label>
+<input id="fitem" placeholder="例如 牛肉、牛奶">
+</div>
+
+<div class="field">
+<label>备注</label>
+<textarea id="fnote" rows="2" placeholder="例如 周末朋友聚餐采购"></textarea>
+</div>
+
+<div class="actions">
+<button class="cancel" onclick="closeAdd()">取消</button>
+<button class="primary" onclick="save()">保存</button>
+</div>
+
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const now=new Date();
+const parts=new Intl.DateTimeFormat('en-CA',{
+timeZone:'Africa/Johannesburg',
+year:'numeric',
+month:'2-digit',
+day:'2-digit'
+}).formatToParts(now);
+
+const map=Object.fromEntries(parts.map(p=>[p.type,p.value]));
+const southToday=`${map.year}-${map.month}-${map.day}`;
+
+let records=JSON.parse(localStorage.getItem('ledger-demo')||'null')||[
+{id:1,date:southToday,merchant:'Checkers',amount:386.50,cat:'超市采购',sub:'食材食品',item:'牛肉、牛奶、水果',note:'周末朋友聚餐采购'},
+{id:2,date:southToday,merchant:'Vida e Caffè',amount:78,cat:'外出餐饮饭馆',sub:'咖啡馆',item:'Latte、Cake',note:'工作下午茶'},
+{id:3,date:'2026-08-18',merchant:'Netcare Hospital',amount:850,cat:'医药健康',sub:'医院',item:'Consultation',note:'体检'}
+];
+
+function money(n){
+return 'R '+Number(n).toLocaleString('en-ZA',{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+});
+}
+
+function go(page){
+document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));
+document.getElementById('n-'+page).classList.add('active');
+if(page==='home')home();
+if(page==='detail')detail();
+if(page==='stat')stat();
+}
+
+function home(){
+let m=southToday.slice(0,7);
+let rs=records.filter(r=>r.date.startsWith(m));
+let total=rs.reduce((a,r)=>a+r.amount,0);
+let cats=['超市采购','外出餐饮饭馆','出行交通','医药健康','其他'];
+
+document.getElementById('app').innerHTML=
+`<div class="top">
+<div class="title">记账簿</div>
+<div class="sub">南非时间 · ${southToday}</div>
+<div class="hero">
+<div class="label">本月总支出</div>
+<div class="amount">${money(total)}</div>
+</div>
+</div>
+<div class="content">
+<div class="section">分类概览</div>
+<div class="cards">
+${cats.map(c=>{
+let v=rs.filter(r=>r.cat===c).reduce((a,r)=>a+r.amount,0);
+let p=total?v/total*100:0;
+return `<div class="card">
+<div class="name">${c}</div>
+<div class="money">${money(v)}</div>
+<div class="bar"><i style="width:${p}%"></i></div>
+</div>`;
+}).join('')}
+</div>
+<div class="section">最近记录</div>
+${rs.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(record).join('')||'<div class="empty">本月暂无记录</div>'}
+</div>`;
+}
+
+function record(r){
+return `<div class="record">
+<div>
+<div class="merchant">${r.merchant}</div>
+<div class="meta">${r.date} · ${r.cat} · ${r.sub||''}</div>
+<div class="meta">${r.item||''}${r.note?' · '+r.note:''}</div>
+</div>
+<div class="price">${money(r.amount)}</div>
+</div>`;
+}
+
+function detail(){
+document.getElementById('app').innerHTML=
+`<div class="content">
+<div class="section">全部明细</div>
+<div class="search">
+<input id="q" placeholder="搜索商家、商品、分类、备注关键词" oninput="search()">
+<button onclick="search()">搜索</button>
+</div>
+<div id="results"></div>
+</div>`;
+search();
+}
+
+function search(){
+let q=(document.getElementById('q')?.value||'').trim().toLowerCase();
+let rs=records.filter(r=>
+[r.merchant,r.item,r.cat,r.sub,r.note,r.date]
+.join(' ').toLowerCase().includes(q)
+).sort((a,b)=>b.date.localeCompare(a.date));
+
+document.getElementById('results').innerHTML=
+rs.map(record).join('')||'<div class="empty">没有找到相关记录</div>';
+}
+
+function stat(){
+let total=records.reduce((a,r)=>a+r.amount,0);
+let cats=['超市采购','外出餐饮饭馆','出行交通','医药健康','其他'];
+
+document.getElementById('app').innerHTML=
+`<div class="content">
+<div class="section">全部记录统计</div>
+<div class="card" style="text-align:center">
+<div class="name">累计支出</div>
+<div class="money" style="font-size:28px">${money(total)}</div>
+<div class="donut"></div>
+<div class="legend">
+${cats.map(c=>{
+let v=records.filter(r=>r.cat===c).reduce((a,r)=>a+r.amount,0);
+return `<div><span>${c}</span><b>${money(v)}</b></div>`;
+}).join('')}
+</div>
+</div>
+</div>`;
+}
+
+function openAdd(){
+document.getElementById('modal').style.display='flex';
+document.getElementById('fdate').value=southToday;
+}
+
+function closeAdd(){
+document.getElementById('modal').style.display='none';
+}
+
+function receiptSelected(input){
+if(input.files&&input.files.length){
+toast('小票照片已选择');
+}
+}
+
+function save(){
+let amount=Number(document.getElementById('famount').value);
+let merchant=document.getElementById('fmerchant').value.trim();
+
+if(!merchant||!amount){
+toast('请填写商家和金额');
+return;
+}
+
+records.push({
+id:Date.now(),
+date:document.getElementById('fdate').value||southToday,
+merchant,
+amount,
+cat:document.getElementById('fcat').value,
+sub:document.getElementById('fsub').value,
+item:document.getElementById('fitem').value,
+note:document.getElementById('fnote').value
+});
+
+localStorage.setItem('ledger-demo',JSON.stringify(records));
+closeAdd();
+toast('保存成功');
+go('detail');
+}
+
+function toast(s){
+let t=document.getElementById('toast');
+t.textContent=s;
+t.style.display='block';
+setTimeout(()=>t.style.display='none',1400);
+}
+
+go('home');
+</script>
+
+</body>
+</html>
